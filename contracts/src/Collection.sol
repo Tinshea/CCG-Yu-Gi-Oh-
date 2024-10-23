@@ -3,6 +3,7 @@ pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Collection is ERC721URIStorage, Ownable {
     // Événements pour les actions
@@ -65,23 +66,20 @@ contract Collection is ERC721URIStorage, Ownable {
         uint256 _quantity,
         uint256 _price
     ) external {
+        require(cardCount < CollectionCards.length, "All cards in this collection are already minted.");
         CollectionCards.push(Card(_name, _cardType, _rarity, _imageUrl, _effect, _attack, _defense, _quantity, _price));
         uint256 id = CollectionCards.length - 1;
         emit CardAdded(id, _name, _cardType, _rarity, _imageUrl, _effect, _attack, _defense);
     }
 
     // Fonction d'achat de carte
-    function purchaseCard(uint256 tokenId) external payable {
+    function purchaseCard(uint256 tokenId) external {
         Card storage card = CollectionCards[tokenId];
-        require(msg.value >= card.price, "Not enough Ether sent");
         require(card.quantity > 0, "Card sold out");
 
         card.quantity--; // Décrémente la quantité
         ownerCardCount[msg.sender]++;
         cardToOwner[tokenId] = msg.sender;
-
-        // Transfert des fonds au propriétaire du contrat
-        payable(owner()).transfer(msg.value);
 
         emit CardPurchased(msg.sender, tokenId, card.price);
 
@@ -108,17 +106,24 @@ contract Collection is ERC721URIStorage, Ownable {
         return cardToOwner[tokenId];
     }
 
-        function getOwnerCard(address owner) public view returns (uint256[] memory) {
-        uint256[] memory result = new uint256[](ownerCardCount[owner]);
-        uint256 counter = 0;
-        for (uint256 i = 0; i < CollectionCards.length; i++) {
-            if (cardToOwner[i] == owner) {
-                result[counter] = i;
-                counter++;
-            }
+   function getOwnerCard(address owner) public view returns (Card[] memory) {
+    uint256 cardCountowner = ownerCardCount[owner]; // Nombre de cartes possédées par l'utilisateur
+    Card[] memory ownerCards = new Card[](cardCountowner); // Crée un tableau pour stocker les cartes
+    uint256 counter = 0;
+
+    // Parcours de toutes les cartes de la collection
+    for (uint256 i = 0; i < CollectionCards.length; i++) {
+        if (cardToOwner[i] == owner) {
+            // Ajouter la carte dans le tableau si le propriétaire correspond
+            ownerCards[counter] = CollectionCards[i];
+            counter++;
         }
-        return result;
     }
+
+    return ownerCards;
+}
+
+
 
     function getOwnerCardCount(address owner) public view returns (uint256) {
         return ownerCardCount[owner];

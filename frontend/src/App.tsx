@@ -3,14 +3,15 @@ import styles from './styles.module.css'
 import { CollectionContext } from './context/CollectionContext'
 
 export const App = () => {
-  const { connectWallet, currentAccount, createCollection, getCollectionCount, getCollection, isOwner, getCollectionCard, addCollectionCard } = useContext(CollectionContext)
+  const { connectWallet, currentAccount, createCollection, getCollectionCount, getCollection, isOwner, getCollectionCard, addCollectionCard, buyCardCollection, getUserCards } = useContext(CollectionContext)
   
   const [collectionName, setCollectionName] = useState('')
   const [collectionNumber, setCollectionNumber] = useState(0)
   const [creationResult, setCreationResult] = useState<boolean | null>(null)
   const [collectionCount, setCollectionCount] = useState(0)
   const [collections, setCollections] = useState<any[]>([])
-  const [collectionCards, setCollectionCards] = useState<{ [key: number]: any[] }>({}) // Cartes par collection
+  const [collectionCards, setCollectionCards] = useState<{ [key: number]: any[] }>({})
+  const [userCards, setUserCards] = useState<any[]>([]) // State to store user's cards
 
   const handleCreateCollection = async () => {
     if (!collectionName || !collectionNumber) return
@@ -25,6 +26,7 @@ export const App = () => {
 
   const fetchCollections = async () => {
     const count = await getCollectionCount() || 0
+    console.log('Collection count:', count)
     setCollectionCount(count)
     
     const collections_ = []
@@ -32,6 +34,7 @@ export const App = () => {
       const collection = await getCollection(i)
       collections_.push(collection)
     }
+    console.log('Collections:', collections_)
     setCollections(collections_)
   }
 
@@ -40,17 +43,32 @@ export const App = () => {
     if (cards) {
       setCollectionCards(prev => ({
         ...prev,
-        [index]: cards,  // Associer les cartes à l'index de la collection
+        [index]: cards,
       }))
+    }
+  }
+
+  const handleBuyCard = async (collectionIndex: number, cardIndex: number, price: number) => {
+    await buyCardCollection(collectionIndex, cardIndex, price)
+    handleGetCollectionCard(collectionIndex)
+  }
+
+  const fetchUserCards = async () => {
+    const cards = await getUserCards()
+    if (cards) {
+      console.log('User cards:', cards)
+      setUserCards(cards)
     }
   }
 
   useEffect(() => {
     fetchCollections()
+    fetchUserCards() // Fetch user's cards when component mounts
   }, [])
 
   return (
     <div className={styles.body}>
+      <h1>Cartes à collectionner</h1>
       <h1>{currentAccount}</h1>
       <div>
         {isOwner !== null && (
@@ -58,7 +76,29 @@ export const App = () => {
         )}
       </div>
       <button onClick={connectWallet}>Connecter le compte metamask</button>
-
+      <h2>Cartes que je possède</h2>
+      <div>
+        <button onClick={fetchUserCards}>Rafraîchir les cartes</button>
+        <ul>
+          {userCards.length > 0 ? (
+            userCards.map((card, index) => (
+              <li key={index}>
+                <img src={card.imageUrl} alt={card.name} className={styles.cardImage} />
+                <div><strong>Nom:</strong> {card.name}</div>
+                <div><strong>Type:</strong> {card.cardType}</div>
+                <div><strong>Rareté:</strong> {card.rarity}</div>
+                <div><strong>Effet:</strong> {card.effect}</div>
+                <div><strong>Attaque:</strong> {card.attack}</div>
+                <div><strong>Défense:</strong> {card.defense}</div>
+                <div><strong>Quantité:</strong> {card.quantity.toNumber()}</div>
+                <div><strong>Prix:</strong> {card.price.toNumber()}</div>
+              </li>
+            ))
+          ) : (
+            <div>Aucune carte trouvée.</div>
+          )}
+        </ul>
+      </div>
       <div>
         <input
           type="text"
@@ -125,6 +165,9 @@ export const App = () => {
                           <div><strong>Défense:</strong> {card.defense}</div>
                           <div><strong>Quantité:</strong> {card.quantity.toNumber()}</div>
                           <div><strong>Prix:</strong> {card.price.toNumber()}</div>
+                          {!isOwner && (
+                            <button onClick={() => handleBuyCard(index, cardIndex, card.price.toNumber())}>Acheter la carte</button>
+                          )}
                         </li>
                       ))
                     ) : (
