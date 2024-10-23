@@ -10,11 +10,7 @@ contract Collection is ERC721URIStorage, Ownable {
     event CardPurchased(address indexed buyer, uint256 indexed tokenId, uint256 price);
     event CardTraded(address indexed from, address indexed to, uint256 indexed tokenId);
     event BoosterOpened(address indexed user, uint256[] cardIds);
-    event CardUpdated(uint256 indexed tokenId, string name, string cardType, string rarity, string imageUrl, string effect, uint32 attack, uint32 defense);
     event CardLimitReached(uint256 indexed tokenId, uint256 maxQuantity);
-
-    string public collectionName;
-    uint256 public cardCount; // Utilisation de uint256 pour cardCount
 
     struct Card {
         string name;
@@ -29,6 +25,8 @@ contract Collection is ERC721URIStorage, Ownable {
     }
 
     Card[] public CollectionCards;
+    string public collectionName;
+    uint256 public cardCount;
     mapping(uint256 => address) public cardToOwner;
     mapping(address => uint256) public ownerCardCount;
 
@@ -40,6 +38,10 @@ contract Collection is ERC721URIStorage, Ownable {
         cardCount = _cardCount;
     }
 
+    function getInfo() public view returns (string memory, uint256) {
+        return (collectionName, cardCount);
+    }
+    
     // Fonction de mint pour créer une carte
     function mint(address _to, uint256 _tokenId, string memory _uri) internal onlyOwner {
         require(CollectionCards.length < cardCount, "All cards in this collection are already minted.");
@@ -62,7 +64,7 @@ contract Collection is ERC721URIStorage, Ownable {
         uint32 _defense,
         uint256 _quantity,
         uint256 _price
-    ) external onlyOwner {
+    ) external {
         CollectionCards.push(Card(_name, _cardType, _rarity, _imageUrl, _effect, _attack, _defense, _quantity, _price));
         uint256 id = CollectionCards.length - 1;
         emit CardAdded(id, _name, _cardType, _rarity, _imageUrl, _effect, _attack, _defense);
@@ -106,6 +108,18 @@ contract Collection is ERC721URIStorage, Ownable {
         return cardToOwner[tokenId];
     }
 
+        function getOwnerCard(address owner) public view returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](ownerCardCount[owner]);
+        uint256 counter = 0;
+        for (uint256 i = 0; i < CollectionCards.length; i++) {
+            if (cardToOwner[i] == owner) {
+                result[counter] = i;
+                counter++;
+            }
+        }
+        return result;
+    }
+
     function getOwnerCardCount(address owner) public view returns (uint256) {
         return ownerCardCount[owner];
     }
@@ -113,4 +127,26 @@ contract Collection is ERC721URIStorage, Ownable {
     function getCollectionCards() public view returns (Card[] memory) {
         return CollectionCards;
     }
+
+    function openBooster(uint256 numCards) external {
+        require(numCards > 0, "Number of cards must be greater than zero");
+        uint256[] memory cardIds = new uint256[](numCards);
+        uint256 count = 0;
+
+        while (count < numCards) { 
+            uint256 randomId = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, count))) % CollectionCards.length;
+            Card storage card = CollectionCards[randomId];
+            if (card.quantity > 0) {
+                card.quantity--;
+                cardIds[count] = randomId;
+                count++;
+            }
+        }
+
+        emit BoosterOpened(msg.sender, cardIds);
+    }
+
+    
+
+
 }

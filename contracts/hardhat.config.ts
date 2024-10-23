@@ -15,12 +15,17 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 200,
       },
-      viaIR: true,  // Active la compilation via la représentation intermédiaire
+      viaIR: true, 
     },
   },
   paths: {
     deploy: './deploy',
     sources: './src',
+  },
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    }
   },
   namedAccounts: {
     deployer: { default: 0 },

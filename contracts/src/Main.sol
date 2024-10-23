@@ -13,35 +13,19 @@ contract Main is Ownable {
     event CollectionCreated(int indexed collectionId, string name);
     event CardAddedToCollection(int indexed collectionId, uint256 cardId);
     event CardPurchased(int indexed collectionId, address buyer, uint256 cardId);
-    event CardUpdatedInCollection(int indexed collectionId, uint256 cardId);
 
-    constructor() Ownable(address(this)) {
+    constructor() Ownable(msg.sender) {
         count = 0;
     }
 
     // Créer une nouvelle collection
     function createCollection(string calldata name, uint256 cardCount) external onlyOwner {
-        address initialOwner = address(this);
-        collections[count++] = new Collection(initialOwner, name, cardCount);
+        collections[count] = new Collection(msg.sender , name, cardCount);
+        count++;
         emit CollectionCreated(count - 1, name);
     }
 
-    // Ajouter une carte à une collection
-    function addCardToCollection(int collectionId, 
-        string calldata name,
-        string calldata cardType,
-        string calldata rarity,
-        string calldata imageUrl,
-        string calldata effect,
-        uint32 attack,
-        uint32 defense,
-        uint256 quantity,
-        uint256 price
-    ) external onlyOwner {
-        Collection collection = collections[collectionId];
-        collection.addCard(name, cardType, rarity, imageUrl, effect, attack, defense, quantity, price);
-        emit CardAddedToCollection(collectionId, collection.getCollectionCards().length - 1);
-    }
+
 
     // Acheter une carte d'une collection
     function purchaseCard(int collectionId, uint256 cardId) external payable {
@@ -50,9 +34,9 @@ contract Main is Ownable {
         emit CardPurchased(collectionId, msg.sender, cardId);
     }
 
-    // Mettre à jour une carte d'une collection
-    function updateCardInCollection(int collectionId, 
-        uint256 cardId,
+
+    function addCardToCollection(
+        int collectionId,
         string calldata name,
         string calldata cardType,
         string calldata rarity,
@@ -65,16 +49,25 @@ contract Main is Ownable {
     ) external onlyOwner {
         Collection collection = collections[collectionId];
         collection.addCard(name, cardType, rarity, imageUrl, effect, attack, defense, quantity, price);
-        emit CardUpdatedInCollection(collectionId, cardId);
+        emit CardAddedToCollection(collectionId, collection.cardCount());
     }
 
+
+    function getCardCollection(int collectionId) external view returns (Collection.Card[] memory) {
+        Collection collection = collections[collectionId];
+        return collection.getCollectionCards();
+    }
     // Obtenir les détails d'une collection
-    function getCollectionDetails(int collectionId) external view returns (Collection) {
-        return collections[collectionId];
+    function getCollectionDetails(int collectionId) external view returns (string memory, uint256) {
+        Collection collection = collections[collectionId];
+
+        return collection.getInfo();
     }
 
     // Obtenir le nombre de collections créées
     function getCollectionCount() external view returns (int) {
         return count;
     }
+
+
 }
