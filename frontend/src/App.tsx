@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import styles from './styles.module.css'
 import * as ethereum from '@/lib/ethereum'
 import * as main from '@/lib/main'
+import './index.css'
+import { BrowserRouter,Route, Routes } from 'react-router-dom'
+import {Home} from './components/Home'
+import { Collection } from './components/Collection'
+import { Profile } from './components/Profile'
+
 
 type Canceler = () => void
 const useAffect = (
@@ -22,11 +27,12 @@ const useAffect = (
   }, dependencies)
 }
 
-const useWallet = () => {
+export const useWallet = () => {
   const [details, setDetails] = useState<ethereum.Details>()
   const [contract, setContract] = useState<main.Main>()
   useAffect(async () => {
     const details_ = await ethereum.connect('metamask')
+    console.log(details_)
     if (!details_) return
     setDetails(details_)
     const contract_ = await main.init(details_)
@@ -42,8 +48,13 @@ const useWallet = () => {
 export const App = () => {
   const wallet = useWallet()
   return (
-    <div className={styles.body}>
-      <h1>Welcome to Pokémon TCG</h1>
-    </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/Collection" element={<Collection />} />
+        <Route path="/Market" element={<Home />} />
+        <Route path="/Profile" element={<Profile />} />
+        <Route path="/Boosters" element={<Home />} />
+
+      </Routes>
   )
 }
