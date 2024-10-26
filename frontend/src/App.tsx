@@ -6,6 +6,8 @@ import { BrowserRouter,Route, Routes } from 'react-router-dom'
 import {Home} from './components/Home'
 import { Collection } from './components/Collection'
 import { Profile } from './components/Profile'
+import { Market } from './components/Market'
+
 
 
 type Canceler = () => void
@@ -51,7 +53,7 @@ export const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/Collection" element={<Collection />} />
-        <Route path="/Market" element={<Home />} />
+        <Route path="/Market" element={<Market />} />
         <Route path="/Profile" element={<Profile />} />
         <Route path="/Boosters" element={<Home />} />
 
