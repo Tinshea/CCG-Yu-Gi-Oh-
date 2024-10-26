@@ -53,6 +53,6 @@ Le `owner` par défaut est l'account 0.
 
 
 
-## Important ;  Metamask
+## Important :  Metamask
 
 Si vous rencontrez des erreurs lors de l'utilisation de Metamask, il peut être utile de vider le cache de l'extension. Cela permet de résoudre les problèmes liés aux données temporaires qui peuvent parfois interférer avec le bon fonctionnement des transactions ou la connexion au réseau local. Pour vider le cache, accédez aux paramètres de Metamask, recherchez l'option de réinitialisation de l'état du compte, puis confirmez l'opération. Cette action ne supprimera pas vos comptes, mais réinitialisera seulement les données de session de Metamask.
