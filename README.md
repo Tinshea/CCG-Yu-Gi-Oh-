@@ -1,6 +1,6 @@
 # Yu-Gi-Oh! Trading Card Game
 
-Bienvenue dans notre application décentralisée (DApp) de jeu de cartes à collectionner inspirée de l'univers Yu-Gi-Oh! ! Ce projet combine les aspects classiques du jeu de cartes à collectionner avec les technologies blockchain, permettant aux utilisateurs de posséder, échanger et collectionner des cartes sous forme de NFT (ERC-721).
+Bienvenue dans notre application décentralisée (DApp) de jeu de cartes à collectionner inspirée de l'univers Yu-Gi-Oh! Ce projet combine les aspects classiques du jeu de cartes à collectionner avec les technologies blockchain, permettant aux utilisateurs de posséder, échanger et collectionner des cartes sous forme de NFT (ERC-721).
 
 Notre DApp offre des fonctionnalités de minting, de gestion de collection, d'achat de boosters, et d'échange de cartes entre joueurs. Grâce à l'intégration de la blockchain Ethereum et de contrats intelligents, chaque carte est unique et peut être véritablement possédée et échangée entre utilisateurs.
 
