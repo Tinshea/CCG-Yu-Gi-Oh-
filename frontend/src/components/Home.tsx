@@ -6,22 +6,25 @@ import marketIcon from "../../public/grandpere.png";
 import profileIcon from "../../public/lewis.png";
 import boosterIcon from "../../public/puzzle.png";
 import logo from "../../public/logo.png"; 
-import { useWallet } from '../App'; 
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import { CollectionContext } from "@/context/CollectionContext";
 
 export const Home = () => {
-  const wallet = useWallet();
-  const [isCardClicked, setIsCardClicked] = useState(false);
   let theme = new Audio("../../public/theme.mp3");
   let buttonhover = new Audio("../../public/button_hover.mp3")
   let buttonclick = new Audio("../../public/click.mp3")
-
+  const [connected,isConnected] =useState<Boolean>(false)
   const navigate = useNavigate();
-
+  const {currentAccount,connectWallet}= useContext(CollectionContext)
+  
   useEffect(()=>{
-    if(true){
+    if(currentAccount){
+      isConnected(true);
       // theme.play();
+    }else{
+      isConnected(false)
+      connectWallet()
     }
   })
 
@@ -38,6 +41,16 @@ export const Home = () => {
 
   return (
     <div className="custom-cursor">
+      {!connected && (
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-80 z-50">
+              <h2 className="text-cyan-400 font-bold text-2xl mb-4 tracking-wider">
+                Connectez-vous avec Metamask
+              </h2>
+              <p className="text-gray-300 mb-8 text-lg font-semibold">
+                Pour accéder à toutes les fonctionnalités, connectez votre portefeuille Metamask.
+              </p>
+        </div>
+      )}
       <div
         className="h-screen bg-cover bg-center bg-gradient-to-b from-blue-800 to-indigo-900" 
         style={{ backgroundImage: `url(${background})` }}
@@ -73,7 +86,6 @@ export const Home = () => {
             </button>
           </div>
 
-          {/* Kaiba Image on the right */}
           <div className="absolute right-10 z-10 flex justify-end">
             <img
               src={kaiba}
@@ -84,7 +96,6 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* Custom Styles */}
       <style>{`
         @font-face {
           font-family: 'YuGiOhFont';

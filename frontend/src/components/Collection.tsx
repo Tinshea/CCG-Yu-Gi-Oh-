@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useContext, useState } from "react";
 import { XMarkIcon , ArrowLeftIcon} from "@heroicons/react/24/outline";
 import background from "../../public/background2.jpg";
 import blackmagicien from "../../public/puzzle.png";
-
 import { useNavigate } from "react-router-dom";
+import { CollectionContext } from "@/context/CollectionContext";
 
 interface CardSet {
   set_name: string;
@@ -14,14 +14,27 @@ interface CardSet {
 }
 
 interface Card {
+  id: number;
   name: string;
+  archetype: string;
+  atk: number;
+  def: number;
+  attribute: string;
+  desc: string;
+  frameType: string;
+  humanReadableCardType: string;
+  level: number;
+  race: string;
+  type: string;
   card_images: { image_url: string }[];
+  card_sets: { set_name: string; set_code: string; set_rarity: string; }[];
+  price: number;
 }
 
 
 export const Collection = () => {
   const navigate = useNavigate();
-  const [cardSets, setCardSets] = useState<CardSet[]>([]);
+  const [cardSets, setCardSets] = useState<any[]>([]);
   const [selectedSet, setSelectedSet] = useState<string>("");
   const [cards, setCards] = useState<Card[]>([]);
   const [showCards, setShowCards] = useState(false);
@@ -29,14 +42,12 @@ export const Collection = () => {
   const [cardQuantities, setCardQuantities] = useState<{ [key: string]: number }>({});
   const [isAdmin, setIsAdmin] = useState<boolean>(true);
   const [setImages, setSetImages] = useState<{ [key: string]: string | null }>({});
+  const {currentAccount, createCollection, getCollectionCount, getCollection, isOwner, getCollectionCard, addCollectionCards, buyCardCollection, getUserCards, getOwnerCount, addMarket, getMarketCards, buyCardFromMarket, removeCardFromMarket, openCollectionBooster } = useContext(CollectionContext)
+  const [collectionCount, setCollectionCount] = useState(0);
 
   useEffect(() => {
-    setIsAdmin(true);
-    // fetch("/api/check-admin") // URL de ton backend
-    //   .then((response) => response.json())
-    //   .then((data) => setIsAdmin(data.isAdmin))
-    //   .catch((error) => console.error("Error checking admin status:", error));
-  }, []);
+    setIsAdmin(isOwner);
+  }, [isOwner]);
 
 
   useEffect(() => {
@@ -45,17 +56,30 @@ export const Collection = () => {
       .then((data: CardSet[]) => {
         const filteredSets = isAdmin ? data : data.filter(set => set.added_by_admin);
         setCardSets(filteredSets);
+        // console.log(filteredSets);
       })
       .catch((error) => console.error("Error fetching card sets:", error));
   }, [isAdmin]);
 
+
   const fetchCards = (setName: string) => {
     fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${setName}`)
       .then((response) => response.json())
-      .then((data) => setCards(data.data))
-      .catch((error) => console.error("Error fetching cards:", error));
+      .then((data) => {
+        if (data && Array.isArray(data.data)) {
+          console.log("Fetched cards:", data.data);
+          setCards(data.data);
+        } else {
+          console.error("Unexpected data format:", data);
+          setCards([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching cards:", error);
+        setCards([]);
+      });
   };
-
+  
   const handleCloseModal = () => {
     setShowCards(false);
     setShowAddSetModal(false);
@@ -78,11 +102,87 @@ export const Collection = () => {
     setCardQuantities((prev) => ({ ...prev, [cardName]: quantity }));
   };
 
-  const handleAddSet = () => {
-    console.log("Adding set:", selectedSet, "with quantities:", cardQuantities);
-    // Ici, tu ajouterais la logique pour ajouter le set à la collection
-    handleCloseModal(); // Ferme le modal après ajout
+  const handleAddSetConfirm = async () => {
+    // 1. Création de la collection avec le nom du set et le nombre de cartes
+    const collectionCreated = await createCollection(selectedSet, cards.length);
+    if (!collectionCreated) {
+      console.error("Erreur lors de la création de la collection.");
+      return;
+    }
+  
+    // 2. Récupère l'ID de la collection nouvellement créée
+    const collectionCount = await getCollectionCount();
+    if (collectionCount === null) {
+      console.error("Erreur lors de la récupération du compte de collections.");
+      return;
+    }
+    const newCollectionId = collectionCount - 1;
+  
+    // 3. Prépare toutes les cartes pour les ajouter en une seule transaction
+    const cardsToAdd = cards.map((card) => {
+      // Détermine le prix en fonction du type de carte
+      let price;
+      if (card.humanReadableCardType.includes("Normal Monster")) {
+        price = 2; // 2 ETH pour les cartes monstres normales
+      } else if (card.humanReadableCardType.includes("Spell") || card.humanReadableCardType.includes("Trap")) {
+        price = 1; // 1 ETH pour les cartes magie/piège
+      } else if (card.humanReadableCardType.includes("Effect Monster")) {
+        price = 3; // 2.5 ETH pour les monstres à effet
+      } else if (card.frameType.includes("Fusion") || card.frameType.includes("Synchro")) {
+        price = 3; // 3 ETH pour les monstres fusion/synchro ou autres
+      } else {
+        price = 1; // Prix par défaut si le type de carte ne correspond à rien d'autre
+      }
+  
+      return {
+        tokenId:0,
+        name: card.name,
+        cardType: card.type || "Type ici",
+        rarity: "Rareté ici", // Remplace par la rareté réelle si disponible
+        imageUrl: card.card_images[0].image_url,
+        effect: card.desc || "Effet ici", // Remplace par l'effet réel si disponible
+        attack: card.atk || 0, // Utilise l'attribut d'attaque réel ou 0
+        defense: card.def || 0, // Utilise l'attribut de défense réel ou 0
+        quantity:1, 
+        price, // Prix déterminé
+      };
+    });
+  
+    // 4. Ajoute toutes les cartes à la collection en une seule transaction
+    const success = await addCollectionCards(newCollectionId, cardsToAdd);
+    setCards([]);
+    setSelectedSet("");
+    if (!success) {
+      console.error("Erreur lors de l'ajout des cartes à la collection.");
+    }
+    handleGetCollectionCard(newCollectionId);
+    console.log(cards);
+    handleCloseModal();
   };
+  
+  
+  const fetchCollections = async () => {
+    const count = await getCollectionCount() || 0
+    console.log('Collection count:', count)
+    setCollectionCount(count)
+    
+    const collections_ = []
+    for (let i = 0; i < count; i++) {
+      const collection = await getCollection(i)
+      collections_.push(collection)
+    }
+    setCardSets(collections_)
+  }
+
+  const handleGetCollectionCard = async (index: number) => {
+    const cards = await getCollectionCard(index)
+    if (cards) {
+      setCards(prev => ({
+        ...prev,
+        [index]: cards,
+      }))
+    }
+  }
 
   const sortSets = (type: string) => {
     let sortedSets;
@@ -112,6 +212,7 @@ export const Collection = () => {
       return null;
     }
   };
+
 
   return (
     <div className="flex bg-cover" style={{ backgroundImage: `url(${background})` }}>
@@ -187,7 +288,7 @@ export const Collection = () => {
             <h2 className="text-2xl mb-4">{selectedSet} - Ajouter des cartes</h2>
             <XMarkIcon className="h-10 w-10 text-lime-500 cursor-pointer mb-7" onClick={() => setShowAddSetModal(false)} />
             <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {cards.map((card) => (
+              {Array.isArray(cards) && cards.map((card) => (
                 <div key={card.name} className="rounded-lg">
                   <img
                     src={card.card_images[0].image_url}
@@ -208,9 +309,9 @@ export const Collection = () => {
  
             <button
               className="bg-blue-500 hover:bg-blue-500  group relative block mx-auto my-3 text-lg custom-card text-white"
-              onClick={handleAddSet}
+              onClick={handleAddSetConfirm}
             >
-              Ajouter set
+              Confirmer
               <div className="absolute inset-0 custom-card h-full w-full scale-0  transition-all duration-300 group-hover:scale-100 group-hover:bg-white/30"></div>
             </button>
           </div>
