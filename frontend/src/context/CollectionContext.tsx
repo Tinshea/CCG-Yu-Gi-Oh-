@@ -1,7 +1,7 @@
-import React, { useEffect, useState, ReactNode } from 'react';
-import { ethers } from 'ethers';
+import React, { useEffect, useState, ReactNode } from 'react'
+import { ethers } from 'ethers'
 
-import { contractAddress, contractABI } from '../../utils/constant';
+import { contractAddress, contractABI } from '../../utils/constant'
 
 export const CollectionContext = React.createContext({
   connectWallet: () => {},
@@ -20,151 +20,166 @@ export const CollectionContext = React.createContext({
     effect: string,
     attack: number,
     defense: number,
-    quantity: number,
     price: number
   ) => false,
-  buyCardCollection: async (collectionId: number, cardId: number, price: number) => false,
+  buyCardCollection: async (
+    collectionId: number,
+    cardId: number,
+    price: number
+  ) => false,
   getUserCards: async () => null,
-});
+  getOwnerCount: async (id: any) => null,
+  addMarket: async (cardId: number) => false,
+  getMarketCards: async () => null,
+  buyCardFromMarket: async (cardId: number, price: number) => false,
+  removeCardFromMarket: async (cardId: number) => false,
+  openCollectionBooster: async (
+    collectionId: number,
+    price: number,
+    numcards: number
+  ) => false,
+})
 
 interface EthereumWindow extends Window {
-  ethereum?: any;
+  ethereum?: any
 }
 
-declare const window: EthereumWindow;
+declare const window: EthereumWindow
 
-const { ethereum } = window;
+const { ethereum } = window
 
 const getEtheriumContract = () => {
   if (typeof ethereum !== 'undefined') {
-    const provider = new ethers.providers.Web3Provider(ethereum);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    return contract;
+    const provider = new ethers.providers.Web3Provider(ethereum)
+    const signer = provider.getSigner()
+    const contract = new ethers.Contract(contractAddress, contractABI, signer)
+    return contract
   }
-  return null;
-};
+  return null
+}
 
 interface CollectionProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export const CollectionProvider = ({ children }: CollectionProviderProps) => {
-  const [currentAccount, setCurrentAccount] = useState('');
-  const [isOwner, setIsOwner] = useState(false);
+  const [currentAccount, setCurrentAccount] = useState('')
+  const [isOwner, setIsOwner] = useState(false)
 
   const checkIfWalletIsConnected = async () => {
     if (!ethereum) {
-      return alert('Make sure you have MetaMask!');
+      return alert('Make sure you have MetaMask!')
     }
-    const accounts = await ethereum.request({ method: 'eth_accounts' });
+    const accounts = await ethereum.request({ method: 'eth_accounts' })
     if (accounts.length > 0) {
-      const account = accounts[0];
-      setCurrentAccount(account);
+      const account = accounts[0]
+      setCurrentAccount(account)
     } else {
-      console.log('No account found');
+      console.log('No account found')
     }
-  };
+  }
+
+  const getOwnerCount = async (id: any) => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const ownerCount = await contract.getOwnerCount(currentAccount)
+      return ownerCount.toNumber()
+    } catch (error) {
+      console.log(error)
+      return null
+    }
+  }
 
   const amIOwner = async () => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
-      const owner = await contract.owner();
-      setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase());
+      const owner = await contract.owner()
+      setIsOwner(currentAccount.toLowerCase() === owner.toLowerCase())
     } catch (error) {
-      console.log(error);
-      setIsOwner(false);
+      console.log(error)
+      setIsOwner(false)
     }
-  };
+  }
 
   const connectWallet = async () => {
     try {
       if (ethereum) {
-        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        setCurrentAccount(accounts[0]);
+        const accounts = await ethereum.request({
+          method: 'eth_requestAccounts',
+        })
+        setCurrentAccount(accounts[0])
       } else {
-        return alert('Please install MetaMask!');
+        return alert('Please install MetaMask!')
       }
     } catch (error) {
-      console.log(error);
-      throw new Error('Error while connecting wallet');
+      console.log(error)
+      throw new Error('Error while connecting wallet')
     }
-  };
+  }
+
+  // Section pour gerer les collections
 
   const createCollection = async (name: string, nbcard: number) => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
-      const transaction = await contract.createCollection(name, nbcard);
-      await transaction.wait();
-      return true;
+      const transaction = await contract.createCollection(name, nbcard)
+      await transaction.wait()
+      return true
     } catch (error) {
-      console.log(error);
-      return false;
-    }
-  };
-
-  const getUserCards = async () => {
-    try {
-      const contract = getEtheriumContract();
-      if (!contract) {
-        throw new Error('Ethereum contract is not available');
-      }
-      const cards = await contract.getOwnerCards(currentAccount);
-      console.log(cards);
-      return cards;
-    } catch (error) {
-      console.log(error);
-      return null;
+      console.log(error)
+      return false
     }
   }
 
   const getCollection = async (collectionId: number) => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
-      const collection = await contract.getCollectionDetails(collectionId);
-      return collection;
+      const collection = await contract.getCollectionDetails(collectionId)
+      return collection
     } catch (error) {
-      console.log(error);
-      return null;
+      console.log(error)
+      return null
     }
-  };
-
+  }
   const getCollectionCount = async () => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
-      const collectionCount = await contract.getCollectionCount();
-      return collectionCount.toNumber();
+      const collectionCount = await contract.getCollectionCount()
+      return collectionCount.toNumber()
     } catch (error) {
-      console.log(error);
-      return null;
+      console.log(error)
+      return null
     }
-  };
+  }
 
   const getCollectionCard = async (collectionId: number) => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
-      const collectionCard = await contract.getCardCollection(collectionId);
-      return collectionCard;
+      const collectionCard = await contract.getCardCollection(collectionId)
+      return collectionCard
     } catch (error) {
-      console.log(error);
-      return null;
+      console.log(error)
+      return null
     }
-  };
+  }
 
   const addCollectionCard = async (
     collectionId: number,
@@ -175,13 +190,12 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
     effect: string,
     attack: number,
     defense: number,
-    quantity: number,
     price: number
   ) => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
       const transaction = await contract.addCardToCollection(
         collectionId,
@@ -192,77 +206,205 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
         effect,
         attack,
         defense,
-        quantity,
-        price
-      );
-      await transaction.wait();
-      return true;
+        price,
+        currentAccount
+      )
+      await transaction.wait()
+      return true
     } catch (error) {
-      console.log(error);
-      return false;
+      console.log(error)
+      return false
     }
-  };
+  }
 
-  const buyCardCollection = async (collectionId: number, cardId: number, price: number) => {
+  const buyCardCollection = async (
+    collectionId: number,
+    cardId: number,
+    price: number
+  ) => {
     try {
-      const contract = getEtheriumContract();
+      const contract = getEtheriumContract()
       if (!contract) {
-        throw new Error('Ethereum contract is not available');
+        throw new Error('Ethereum contract is not available')
       }
 
-      // Log the price before conversion to check its value
-      console.log("Price in ETH:", price);
+      const parsedAmount = ethers.utils.parseEther(price.toString())
+      const transaction = await contract.purchaseCard(
+        collectionId,
+        cardId,
+        currentAccount,
+        {
+          value: parsedAmount,
+        }
+      )
 
-      // Check if you are passing the right unit (ETH or wei)
-      const parsedAmount = ethers.utils.parseEther(price.toString()); // Assuming price is in ETH
-      console.log("Parsed amount in wei:", parsedAmount.toString());
-
-      const owner = await contract.owner();
-      // await ethereum.request({
-      //   method: "eth_sendTransaction",
-      //   params: [{
-      //     from: currentAccount,
-      //     to: owner,
-      //     gas: "0x5208", // 21000 gas
-      //     value: parsedAmount._hex // Utilise la valeur en wei (string)
-      //   }],
-      // });
-      
-      const transaction = await contract.purchaseCard(collectionId, cardId, {
-        value: parsedAmount // Valeur envoyée en wei
-      });
-      
-      console.log('Transaction sent:', transaction);
-      await transaction.wait();
-      console.log('Transaction confirmed:', transaction);
-      return true;
+      await transaction.wait()
+      return true
     } catch (error) {
-      console.log(error);
-      return false;
+      console.log(error)
+      return false
     }
-  };
+  }
+
+  const getUserCards = async () => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const cards = await contract.getOwnerCards(currentAccount)
+      return cards
+    } catch (error) {
+      console.log(error)
+      return null
+    }
+  }
+
+
+  // Section pour gerer le market
+
+  const addMarket = async (cardId: number) => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const transaction = await contract.addCardToMarket(cardId)
+      await transaction.wait()
+      return true
+    } catch (error) {
+      console.log(error)
+      return false
+    }
+  }
+
+  const getMarketCards = async () => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const cards = await contract.getMarketCards()
+      return cards
+    } catch (error) {
+      console.log(error)
+      return null
+    }
+  }
+
+  const buyCardFromMarket = async (cardId: number, price: number) => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const transaction = await contract.buyCardFromMarket(
+        cardId,
+        currentAccount,
+        {
+          value: ethers.utils.parseEther(price.toString()),
+        }
+      )
+      await transaction.wait()
+      return true
+    } catch (error) {
+      console.log(error)
+      return false
+    }
+  }
+
+  const removeCardFromMarket = async (cardId: number) => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+      const transaction = await contract.removeCardFromMarket(cardId)
+      await transaction.wait()
+      return true
+    } catch (error) {
+      console.log(error)
+      return false
+    }
+  }
+
+  // Section pour ouvrir un booster
+
+  const openCollectionBooster = async (
+    collectionId: number,
+    price: number,
+    numcards: number
+  ) => {
+    try {
+      const contract = getEtheriumContract()
+      if (!contract) {
+        throw new Error('Ethereum contract is not available')
+      }
+
+      const parsedAmount = ethers.utils.parseEther(price.toString())
+      const transaction = await contract.openCollectionBooster(
+        collectionId,
+        currentAccount,
+        price,
+        numcards,
+        {
+          value: parsedAmount,
+        }
+      )
+
+      await transaction.wait()
+      return new Promise((resolve, reject) => {
+        contract.on("BoosterOpened", (newQuote, test, cards) => {
+          resolve(cards)
+        })
+      })
+    } catch (error) {
+      console.log(error)
+      return false
+    }
+  }
 
   useEffect(() => {
-    checkIfWalletIsConnected();
-  }, []);
+    checkIfWalletIsConnected()
+  }, [])
 
   useEffect(() => {
     if (currentAccount) {
-      amIOwner(); // or any other function that needs to check the owner
+      amIOwner() 
     }
-  }, [currentAccount]); // Run when currentAccount changes
+  }, [currentAccount]) 
 
   useEffect(() => {
     if (ethereum) {
       ethereum.on('accountsChanged', function () {
-        checkIfWalletIsConnected();
-      });
+        checkIfWalletIsConnected()
+      })
     }
-  }, []);
+  }, [])
+  
 
   return (
-    <CollectionContext.Provider value={{ connectWallet, currentAccount, createCollection, getCollection, getCollectionCount, isOwner, getCollectionCard, addCollectionCard, buyCardCollection, getUserCards }}>
+    <CollectionContext.Provider
+      value={{
+        connectWallet,
+        currentAccount,
+        isOwner,
+        createCollection,
+        getCollection,
+        getCollectionCount,
+        getCollectionCard,
+        addCollectionCard,
+        buyCardCollection,
+        getUserCards,
+        getOwnerCount,
+        addMarket,
+        getMarketCards,
+        buyCardFromMarket,
+        removeCardFromMarket,
+        openCollectionBooster,
+      }}
+    >
       {children}
     </CollectionContext.Provider>
-  );
-};
+  )
+}
