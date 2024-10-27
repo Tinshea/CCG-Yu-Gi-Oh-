@@ -7,7 +7,8 @@ Notre DApp offre des fonctionnalités de minting, de gestion de collection, d'ac
 # Vidéo 
 Vous pouvez visionner la vidéo de présentation du projet ici :
 
-https://github.com/user-attachments/assets/e57eece5-b56b-44b1-8d70-b4cf6836a25d
+https://github.com/user-attachments/assets/e57eece5-b56b-44b1-8d70-b4cf6836a25d](https://github.com/user-attachments/assets/c45454e8-1a98-4568-a9a3-4c10a65743f8
+
 
 ou sur YouTube :
 https://www.youtube.com/watch?v=l3uL3gKksAo
