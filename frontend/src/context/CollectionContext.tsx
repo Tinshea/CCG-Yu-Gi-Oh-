@@ -250,6 +250,7 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
       }
 
       const parsedAmount = ethers.utils.parseEther(price.toString())
+      console.log("collectionContext",collectionId, cardId, price);
       const transaction = await contract.purchaseCard(
         collectionId,
         cardId,

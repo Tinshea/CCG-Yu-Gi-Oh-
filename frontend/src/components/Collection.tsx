@@ -165,7 +165,7 @@ export const Collection = () => {
     const count = (await getCollectionCount()) || 0;
     console.log("Collection count:", count);
     setCollectionCount(count);
-  
+    
     const allSetsResponse = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
     const allSetsData = await allSetsResponse.json();
   
@@ -341,7 +341,8 @@ export const Collection = () => {
             Array.isArray(cardSet) &&
             cardSet.map((card, index) => {
               const price = card[9] && card[9]._isBigNumber ? BigNumber.from(card[9]._hex).toString() : "N/A";
-              
+              console.log("iciiii",cards);
+              console.log("iciiii aussi",key)
               return (
                 <div key={index} className="rounded-lg">
                   <div className="card-info ">
@@ -357,7 +358,7 @@ export const Collection = () => {
                     {card.quantity > 0 ?(
                     <button
                     className="bg-yellow-500 hover:bg-blue-500 group relative block mx-auto my-3 text-lg custom-card2 text-white"
-                    onClick={() => handleAcheter(index,card.tokenId.toNumber(),card.price.toNumber())}
+                    onClick={() => handleAcheter(Number(key),card.tokenId.toNumber(),card.price.toNumber())}
                     >
                     Acheter
                   </button>):(
