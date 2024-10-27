@@ -131,7 +131,8 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
   function getMarketCards() external view returns (Collection.Card[] memory) {
     Collection.Card[] memory cards = new Collection.Card[](marketCards.length);
     for (uint256 i = 0; i < marketCards.length; i++) {
-      Collection collection = collections[cardtocollection[i]];
+      uint256 x = marketCards[i];
+      Collection collection = collections[cardtocollection[x]];
       cards[i] = collection.getCard(marketCards[i]);
     }
     return cards;
