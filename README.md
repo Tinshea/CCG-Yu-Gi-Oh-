@@ -4,6 +4,13 @@ Bienvenue dans notre application décentralisée (DApp) de jeu de cartes à coll
 
 Notre DApp offre des fonctionnalités de minting, de gestion de collection, d'achat de boosters, et d'échange de cartes entre joueurs. Grâce à l'intégration de la blockchain Ethereum et de contrats intelligents, chaque carte est unique et peut être véritablement possédée et échangée entre utilisateurs.
 
+#Vidéo 
+Vous pouvez visionner la vidéo de présentation du projet ici :
+https://github.com/user-attachments/assets/e57eece5-b56b-44b1-8d70-b4cf6836a25d
+
+ou sur YouTube :
+https://www.youtube.com/watch?v=l3uL3gKksAo
+
 # Installation
 
 ```bash
