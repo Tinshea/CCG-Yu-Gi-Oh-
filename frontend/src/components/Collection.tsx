@@ -106,6 +106,7 @@ export const Collection = () => {
   const handleAddSetConfirm = async () => {
     // 1. Création de la collection avec le nom du set et le nombre de cartes
     const collectionCreated = await createCollection(selectedSet, cards.length);
+    console.log("ici",cards.length);
     if (!collectionCreated) {
       console.error("Erreur lors de la création de la collection.");
       return;
@@ -142,7 +143,7 @@ export const Collection = () => {
         rarity: "Rareté ici", // Remplace par la rareté réelle si disponible
         imageUrl: card.card_images[0].image_url,
         effect: card.desc || "Effet ici", // Remplace par l'effet réel si disponible
-        attack: card.atk || 0, // Utilise l'attribut d'attaque réel ou 0
+        attack: 0, // Utilise l'attribut d'attaque réel ou 0
         defense: card.def || 0, // Utilise l'attribut de défense réel ou 0
         quantity:1, 
         price, // Prix déterminé
@@ -278,7 +279,7 @@ export const Collection = () => {
       <div className="ml-10 bg-white/10 w-3/4 h-screen overflow-y-scroll p-4">
         <h2 className="text-white text-2xl mb-4">Sets de cartes</h2>
         <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
-          {cardSets.map((set,index) => (
+          {cardSets.length > 0 && cardSets.map((set,index) => (
             <div key={set.set_name} className="p-4 bg-black/70  rounded-xl  custom-card">
               <h3 className="text-lime-500 text-lg mb-2">{set.set_name}</h3>
               {set.set_image ? ( // Utilisation directe de l'image fournie par l'API
@@ -326,7 +327,7 @@ export const Collection = () => {
           <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
           {isAdmin ? (
           // Admin view - directly maps over `cards`
-          cards.map((card, index) => (
+          cards.length > 0 && cards.map((card, index) => (
             <div key={index} className="rounded-lg">
               <img
                 src={card.card_images[0].image_url}
@@ -339,7 +340,7 @@ export const Collection = () => {
           // Non-admin view - maps over `Object.entries(cards)` to handle `cardSet`
           Object.entries(cards).map(([key, cardSet]) => (
             Array.isArray(cardSet) &&
-            cardSet.map((card, index) => {
+            cardSets.length > 0 && cardSet.map((card, index) => {
               const price = card[9] && card[9]._isBigNumber ? BigNumber.from(card[9]._hex).toString() : "N/A";
               console.log("iciiii",cards);
               console.log("iciiii aussi",key)

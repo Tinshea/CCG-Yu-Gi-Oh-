@@ -53,9 +53,9 @@ export const Profile = () => {
   const [showFullScreenImage, setShowFullScreenImage] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const navigate = useNavigate();
-  const { currentAccount, getUserCards } = useContext(CollectionContext);
+  const { currentAccount, getUserCards, addMarket, removeCardFromMarket, getMarketCards} = useContext(CollectionContext);
   const [cards, setCards] = useState<Card[]>([]);
-
+  const [showSuppWindow, setShowSuppWindow] = useState(false);
   const handleContextMenu = (event: React.MouseEvent, card: Card, index: number) => {
     event.preventDefault();
     setSelectedCard(card);
@@ -75,20 +75,18 @@ export const Profile = () => {
     setShowMenu(false);
   };
 
-  const openSellWindow = () => {
+  const openSellWindow = async (cardId: number) => {
+    await addMarket(cardId)
     setShowSellWindow(true);
-    closeMenu();
   };
 
-  const confirmSale = () => {
-    alert(`Carte vendue pour ${sellPrice} !`);
+
+  const closeConfirmWindow = () => {
     setShowSellWindow(false);
-    setSellPrice(0);
   };
 
-  const cancelSale = () => {
-    setShowSellWindow(false);
-    setSellPrice(0);
+  const closeSuppWindow = () => {
+    setShowSuppWindow(false);
   };
 
   const showImageInFullScreen = () => {
@@ -107,10 +105,15 @@ export const Profile = () => {
     }
   };
 
-  useEffect(() => {
+  const openDeleteFromMarket =async (cardId:number) => {
+    await removeCardFromMarket(cardId);
+    setShowSuppWindow(true);
+  }
+
+
+  useEffect(() => { 
     fetchUserCards();
-    console.log(cards);
-  }, []);
+  }, [cards]);
 
   return (
     <div className="flex h-screen bg-cover overflow-hidden" style={{ backgroundImage: `url(${background})` }}>
@@ -134,7 +137,7 @@ export const Profile = () => {
         <div className="grid grid-cols-2 justify-end">
           <div className="flex items-center bg-zinc-300 border-4 border-white p-4 ml-7 w-5/6 h-14">
             <img src={deck} className="w-12" />
-            <span className="text-black text-3xl font-extrabold">Cartes possédées</span>
+            <span className="text-black text-3xl font-extrabold">Cartes possédées : {cards.length}</span>
           </div>
           <div className="flex justify-end bg-black items-center border-2 opacity-80 border-white p-4 w-full h-14 rounded-md">
             <span className="text-white text-3xl font-extrabold mx-auto">Bienvenue, Duelliste</span>
@@ -167,11 +170,11 @@ export const Profile = () => {
               <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={showImageInFullScreen}>
                 Afficher carte
               </button>
-              <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={openSellWindow}>
-                Vendre
+              <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={() => openSellWindow(selectedCard.tokenId)}>
+                Vendre sur le Market
               </button>
-              <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={() => alert("Supprimer")}>
-                Supprimer
+              <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={() => openDeleteFromMarket(selectedCard.tokenId)}>
+                Supprimer du Market
               </button>
               <button className="block w-full text-left p-2 hover:bg-gray-200" onClick={closeMenu}>
                 Annuler
@@ -181,26 +184,29 @@ export const Profile = () => {
 
           {showSellWindow && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
-              <div className="bg-white rounded-lg p-4 w-1/4">
-                <h3 className="text-lg font-bold mb-4">Vendre la carte</h3>
-                <label className="block mb-2">Prix de vente :</label>
-                <input
-                  type="text"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(Number(e.target.value))}
-                  className="border border-gray-300 rounded-md w-full p-2 mb-4"
-                />
-                <div className="flex justify-between">
-                  <button onClick={confirmSale} className="bg-black text-white px-4 py-2 rounded-md">
+              <div className="bg-white rounded-lg p-4 w-1/6">
+                <h3 className="text-lg text-center font-bold mb-4 text-black">Carte Vendue !</h3>
+                <div className="flex justify-center">
+                  <button onClick={closeConfirmWindow} className="bg-red-700 group relative block mx-auto my-3 text-lg custom-card2 text-white">
                     Confirmer
-                  </button>
-                  <button onClick={cancelSale} className="bg-zinc-500 text-white px-4 py-2 rounded-md">
-                    Annuler
                   </button>
                 </div>
               </div>
             </div>
           )}
+
+          {showSuppWindow && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-40">
+              <div className="bg-white rounded-lg p-4 w-1/6">
+                <h3 className="text-lg text-center font-bold mb-4 text-black">Carte Supprimée du Market</h3>
+                <div className="flex justify-center">
+                  <button onClick={closeSuppWindow} className="bg-yellow-500 group relative block mx-auto my-3 text-lg custom-card2 text-white">
+                    Confirmer
+                  </button>
+                </div>
+              </div>
+            </div>
+            )}
 
           {showFullScreenImage && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 z-40">
@@ -215,6 +221,41 @@ export const Profile = () => {
           )}
         </div>
       </div>
+      <style>{`
+        @font-face {
+          font-family: 'YuGiOhFont';
+          src: url('../../public/yu-gi-oh-matrix-bold.ttf') format('truetype');
+        }
+
+        .custom-card {
+          color: white;
+          font-size: 1.5rem;
+          font-weight: bold;
+          padding: 10px 20px;
+          border: 1px solid white;
+          clip-path: polygon(30% 0%, 94% 0, 100% 7%, 100% 70%, 100% 100%, 5% 100%, 0 93%, 0 0);
+          transition: transform 0.3s, box-shadow 0.3s;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+          font-family: 'YuGiOhFont', sans-serif;
+        }
+
+        .custom-card2 {
+          color: white;
+          font-weight: bold;
+          padding: 5px 10px;
+          border: 2px solid black;
+          clip-path: polygon(30% 0%, 94% 0, 100% 7%, 100% 70%, 100% 100%, 5% 100%, 0 93%, 0 0);
+          transition: transform 0.3s, box-shadow 0.3s;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+          font-family: 'YuGiOhFont', sans-serif;
+        }
+      `
+      }
+      </style>
     </div>
   );
 };

@@ -8,6 +8,7 @@ import {Home} from './components/Home'
 import { Collection } from './components/Collection'
 import { Profile } from './components/Profile'
 import { Market } from './components/Market'
+import { Booster } from './components/Booster'
 
 export const App = () => {
   return (
@@ -16,7 +17,7 @@ export const App = () => {
         <Route path="/Collection" element={<Collection />} />
         <Route path="/Market" element={<Market />} />
         <Route path="/Profile" element={<Profile />} />
-        <Route path="/Boosters" element={<Home />} />
+        <Route path="/Boosters" element={<Booster />} />
 
       </Routes>
   )

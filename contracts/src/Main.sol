@@ -147,8 +147,9 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
         Collection collection = collections[cardtocollection[cardId]];
         Collection.Card memory card = collection.getCard(cardId);
         require(msg.value >= card.price, "Not enough Ether sent.");
+        address cardowner = collection.getCardOwner(cardId);
         collection.purchaseCard(cardId, _to);
-        payable(owner()).transfer(msg.value);
+        payable(cardowner).transfer(msg.value);
         removeCardFromMarket(cardId);
         break;
       }
