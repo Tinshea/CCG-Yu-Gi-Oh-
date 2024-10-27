@@ -11,17 +11,19 @@ export const CollectionContext = React.createContext({
   getCollectionCount: async () => null,
   isOwner: false,
   getCollectionCard: async (collectionId: number) => null,
-  addCollectionCard: async (
+  addCollectionCards: async (
     collectionId: number,
-    name: string,
-    cardType: string,
-    rarity: string,
-    imageUrl: string,
-    effect: string,
-    attack: number,
-    defense: number,
-    price: number
-  ) => false,
+    cards: {
+      name: string;
+      cardType: string;
+      rarity: string;
+      imageUrl: string;
+      effect: string;
+      attack: number;
+      defense: number;
+      price: number;
+    }[]
+  ): Promise<boolean> => false,
   buyCardCollection: async (
     collectionId: number,
     cardId: number,
@@ -33,11 +35,11 @@ export const CollectionContext = React.createContext({
   getMarketCards: async () => null,
   buyCardFromMarket: async (cardId: number, price: number) => false,
   removeCardFromMarket: async (cardId: number) => false,
-  openCollectionBooster: async (
+  openCollectionBooster: (
     collectionId: number,
     price: number,
     numcards: number
-  ) => false,
+  ): Promise<any> => Promise.resolve([]),
 })
 
 interface EthereumWindow extends Window {
@@ -75,7 +77,7 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
       const account = accounts[0]
       setCurrentAccount(account)
     } else {
-      console.log('No account found')
+      connectWallet()
     }
   }
 
@@ -180,34 +182,53 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
       return null
     }
   }
-
-  const addCollectionCard = async (
+  // const newCards = [
+  //   { tokenId:11,
+  //     name: 'Card 1',
+  //     cardType: 'Type 1',
+  //     rarity: 'Rare',
+  //     imageUrl: 'http://example.com/image1.png',
+  //     effect: 'Effect 1',
+  //     attack: 100,
+  //     defense: 200,
+  //     quantity:1, 
+  //     price: ethers.utils.parseEther('0.1')
+  //   },
+  //   { tokenId:12,
+  //     name: 'Card 2',
+  //     cardType: 'Type 2',
+  //     rarity: 'Common',
+  //     imageUrl: 'http://example.com/image2.png',
+  //     effect: 'Effect 2',
+  //     attack: 150,
+  //     defense: 250,
+  //     quantity:1, 
+  //     price: ethers.utils.parseEther('0.05')
+  //   }
+  // ];
+  
+  const addCollectionCards = async (
     collectionId: number,
-    name: string,
-    cardType: string,
-    rarity: string,
-    imageUrl: string,
-    effect: string,
-    attack: number,
-    defense: number,
-    price: number
+    cards: {
+      name: string,
+      cardType: string,
+      rarity: string,
+      imageUrl: string,
+      effect: string,
+      attack: number,
+      defense: number,
+      price: number
+    }[]
   ) => {
     try {
       const contract = getEtheriumContract()
       if (!contract) {
         throw new Error('Ethereum contract is not available')
       }
-      const transaction = await contract.addCardToCollection(
+      const transaction = await contract.addCardsToCollection(
         collectionId,
-        name,
-        cardType,
-        rarity,
-        imageUrl,
-        effect,
-        attack,
-        defense,
-        price,
-        currentAccount
+        currentAccount,
+        cards
       )
       await transaction.wait()
       return true
@@ -229,6 +250,7 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
       }
 
       const parsedAmount = ethers.utils.parseEther(price.toString())
+      console.log("collectionContext",collectionId, cardId, price);
       const transaction = await contract.purchaseCard(
         collectionId,
         cardId,
@@ -393,7 +415,7 @@ export const CollectionProvider = ({ children }: CollectionProviderProps) => {
         getCollection,
         getCollectionCount,
         getCollectionCard,
-        addCollectionCard,
+        addCollectionCards,
         buyCardCollection,
         getUserCards,
         getOwnerCount,

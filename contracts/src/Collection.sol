@@ -21,7 +21,6 @@ contract Collection is ERC721URIStorage, Ownable {
     uint256 price; 
   }
 
-
   Card[] public CollectionCards; // Tableau de toutes les cartes de la collection
   string public collectionName;  // Nom de la collection
   uint256 public cardCount; // Nombre de cartes dans la collection

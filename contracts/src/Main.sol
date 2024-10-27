@@ -57,6 +57,7 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
     payable(owner()).transfer(msg.value); // Transfert des fonds au propriétaire du contrat
   }
 
+<<<<<<< HEAD
   function addCardToCollection(
     int collectionId,
     string calldata name,
@@ -84,6 +85,30 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
     );
     cardtocollection[cardCount] = collectionId;
     cardCount++;
+=======
+  function addCardsToCollection(
+      int collectionId,
+      address _to,
+      Collection.Card[] calldata newCards
+  ) external onlyOwner {
+      Collection collection = collections[collectionId];
+      for (uint256 i = 0; i < newCards.length; i++) {
+          collection.addCard(
+              cardCount,
+              newCards[i].name,
+              newCards[i].cardType,
+              newCards[i].rarity,
+              newCards[i].imageUrl,
+              newCards[i].effect,
+              newCards[i].attack,
+              newCards[i].defense,
+              newCards[i].price,
+              _to
+          );
+          cardtocollection[cardCount] = collectionId;
+          cardCount++;
+      }
+>>>>>>> frontendyacine
   }
 
   function getCardCollection(
@@ -136,7 +161,12 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
   function getMarketCards() external view returns (Collection.Card[] memory) {
     Collection.Card[] memory cards = new Collection.Card[](marketCards.length);
     for (uint256 i = 0; i < marketCards.length; i++) {
+<<<<<<< HEAD
       Collection collection = collections[cardtocollection[i]];
+=======
+      uint256 x = marketCards[i];
+      Collection collection = collections[cardtocollection[x]];
+>>>>>>> frontendyacine
       cards[i] = collection.getCard(marketCards[i]);
     }
     return cards;
@@ -152,8 +182,14 @@ event BoosterOpened(address indexed to, int indexed collectionId, Collection.Car
         Collection collection = collections[cardtocollection[cardId]];
         Collection.Card memory card = collection.getCard(cardId);
         require(msg.value >= card.price, "Not enough Ether sent.");
+<<<<<<< HEAD
         collection.purchaseCard(cardId, _to);
         payable(owner()).transfer(msg.value);
+=======
+        address cardowner = collection.getCardOwner(cardId);
+        collection.purchaseCard(cardId, _to);
+        payable(cardowner).transfer(msg.value);
+>>>>>>> frontendyacine
         removeCardFromMarket(cardId);
         break;
       }
