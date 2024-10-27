@@ -4,6 +4,7 @@ import background from "../../public/background2.jpg";
 import blackmagicien from "../../public/puzzle.png";
 import { useNavigate } from "react-router-dom";
 import { CollectionContext } from "@/context/CollectionContext";
+import { BigNumber } from "ethers"; 
 
 interface CardSet {
   set_name: string;
@@ -51,14 +52,18 @@ export const Collection = () => {
 
 
   useEffect(() => {
-    fetch("https://db.ygoprodeck.com/api/v7/cardsets.php")
-      .then((response) => response.json())
-      .then((data: CardSet[]) => {
-        const filteredSets = isAdmin ? data : data.filter(set => set.added_by_admin);
+    const fetchSets = async () => {
+      if (isAdmin) {
+        const response = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
+        const data: CardSet[] = await response.json();
+        const filteredSets = data; 
         setCardSets(filteredSets);
-        // console.log(filteredSets);
-      })
-      .catch((error) => console.error("Error fetching card sets:", error));
+      } else {
+        await fetchCollections();
+      }
+    };
+
+    fetchSets().catch(error => console.error("Error fetching sets:", error));
   }, [isAdmin]);
 
 
@@ -67,7 +72,6 @@ export const Collection = () => {
       .then((response) => response.json())
       .then((data) => {
         if (data && Array.isArray(data.data)) {
-          console.log("Fetched cards:", data.data);
           setCards(data.data);
         } else {
           console.error("Unexpected data format:", data);
@@ -93,14 +97,11 @@ export const Collection = () => {
 
   const handleAddSetClick = (setName: string) => {
     setSelectedSet(setName);
-    setCardQuantities({});
     fetchCards(setName);
     setShowAddSetModal(true);
   };
 
-  const handleCardQuantityChange = (cardName: string, quantity: number) => {
-    setCardQuantities((prev) => ({ ...prev, [cardName]: quantity }));
-  };
+
 
   const handleAddSetConfirm = async () => {
     // 1. Création de la collection avec le nom du set et le nombre de cartes
@@ -156,23 +157,42 @@ export const Collection = () => {
       console.error("Erreur lors de l'ajout des cartes à la collection.");
     }
     handleGetCollectionCard(newCollectionId);
-    console.log(cards);
     handleCloseModal();
   };
   
-  
+  //fonction pour recuperer les sets pour l'utilisateur
   const fetchCollections = async () => {
-    const count = await getCollectionCount() || 0
-    console.log('Collection count:', count)
-    setCollectionCount(count)
-    
-    const collections_ = []
-    for (let i = 0; i < count; i++) {
-      const collection = await getCollection(i)
-      collections_.push(collection)
-    }
-    setCardSets(collections_)
-  }
+    const count = (await getCollectionCount()) || 0;
+    console.log("Collection count:", count);
+    setCollectionCount(count);
+  
+    const allSetsResponse = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
+    const allSetsData = await allSetsResponse.json();
+  
+    const collectionPromises = Array.from({ length: count }, async (_, i) => {
+      const collection = await getCollection(i);
+  
+      if (collection && collection[0]) {
+        const setName = collection[0];
+        const matchingSet = allSetsData.find((set: any) => set.set_name === setName);
+  
+        return {
+          num_of_cards: matchingSet?.num_of_cards || null,
+          set_code:matchingSet?.set_code ||null,
+          set_image: matchingSet?.set_image || null,
+          set_name: setName,
+          tcg_date: matchingSet?.tcg_date || null,
+        };
+      }
+      return null;
+    });
+  
+    const collections_ = (await Promise.all(collectionPromises)).filter(Boolean);
+    setCardSets(collections_);
+  };
+  
+  
+  
 
   const handleGetCollectionCard = async (index: number) => {
     const cards = await getCollectionCard(index)
@@ -182,6 +202,12 @@ export const Collection = () => {
         [index]: cards,
       }))
     }
+  }
+  
+  const handleSeeClick = (index:number) =>{
+    setSelectedSet(cardSets[index].set_name);
+    handleGetCollectionCard(index);
+    setShowAddSetModal(true);
   }
 
   const sortSets = (type: string) => {
@@ -202,17 +228,18 @@ export const Collection = () => {
     setCardSets(sortedSets);
   };
 
-  const fetchSetImage = async (setName: string): Promise<string | null> => {
-    try {
-      const response = await fetch(`https://cors-anywhere.herokuapp.com/http://yugiohprices.com/api/set_image/${setName}`);
-      const data = await response.json();
-      return data?.image_url || null;
-    } catch (error) {
-      console.error(`Error fetching image for set ${setName}:`, error);
-      return null;
+  useEffect(() => {
+    if (cards) {
+      console.log("Updated cards:", cards); // Logs whenever cards change
     }
-  };
+  }, [cards]);
+  
 
+  const handleAcheter =async (collectionIndex: number, cardIndex: number, price: number) =>{
+    console.log(cardIndex);
+    await buyCardCollection(collectionIndex, cardIndex, price);
+    handleGetCollectionCard(collectionIndex)
+  }
 
   return (
     <div className="flex bg-cover" style={{ backgroundImage: `url(${background})` }}>
@@ -251,7 +278,7 @@ export const Collection = () => {
       <div className="ml-10 bg-white/10 w-3/4 h-screen overflow-y-scroll p-4">
         <h2 className="text-white text-2xl mb-4">Sets de cartes</h2>
         <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
-          {cardSets.map((set) => (
+          {cardSets.map((set,index) => (
             <div key={set.set_name} className="p-4 bg-black/70  rounded-xl  custom-card">
               <h3 className="text-lime-500 text-lg mb-2">{set.set_name}</h3>
               {set.set_image ? ( // Utilisation directe de l'image fournie par l'API
@@ -265,14 +292,22 @@ export const Collection = () => {
               )}
               <p className="text-white text-sm glow-text">Date de sortie: {set.tcg_date}</p>
               <p className="text-white text-sm glow-text">Nombre de Cartes: {set.num_of_cards}</p>
-              {isAdmin &&(
+              {isAdmin ?(
                 <button 
                 className="group relative block mx-auto my-3 h-10 w-1/2 overflow-hidden rounded-2xl bg-lime-500 text-lg font-bold text-white" 
                 onClick={() => handleAddSetClick(set.set_name)}
               >
                 Ajouter set
                 <div className="absolute inset-0 h-full w-full scale-0 rounded-2xl transition-all duration-300 group-hover:scale-100 group-hover:bg-white/30"></div>
-              </button>)}
+              </button>):
+                <button 
+                className="group relative block mx-auto my-3 h-10 w-1/2 overflow-hidden rounded-2xl bg-blue-500 text-lg font-bold text-white" 
+                onClick={() => handleSeeClick(index)}
+              >
+                voir les cartes
+                <div className="absolute inset-0 h-full w-full scale-0 rounded-2xl transition-all duration-300 group-hover:scale-100 group-hover:bg-white/30"></div>
+              </button>
+              }
             </div>
           ))}
         </div>
@@ -280,43 +315,75 @@ export const Collection = () => {
 
       {/* Modal pour l'ajout de set */}
       {showAddSetModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-          onClick={handleOutsideClick}
-        >
-          <div className="bg-black p-8 bg-opacity-90 rounded-lg overflow-y-auto h-4/5 w-3/4 relative">
-            <h2 className="text-2xl mb-4">{selectedSet} - Ajouter des cartes</h2>
-            <XMarkIcon className="h-10 w-10 text-lime-500 cursor-pointer mb-7" onClick={() => setShowAddSetModal(false)} />
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {Array.isArray(cards) && cards.map((card) => (
-                <div key={card.name} className="rounded-lg">
-                  <img
-                    src={card.card_images[0].image_url}
-                    alt={card.name}
-                    className="object-cover  rounded-md"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Quantité"
-                    value={cardQuantities[card.name] || 0}
-                    onChange={(e) => handleCardQuantityChange(card.name, parseInt(e.target.value) || 0)}
-                    className="border border-gray-300 rounded p-1 w-full"
-                  />
-                </div>
-              ))}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+        onClick={handleOutsideClick}
+      >
+        <div className="bg-black p-8 bg-opacity-90 rounded-lg overflow-y-auto h-4/5 w-3/4 relative">
+          <h2 className="text-2xl mb-4">{selectedSet} - Ajouter des cartes</h2>
+          <XMarkIcon className="h-10 w-10 text-lime-500 cursor-pointer mb-7" onClick={() => setShowAddSetModal(false)} />
+          
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+          {isAdmin ? (
+          // Admin view - directly maps over `cards`
+          cards.map((card, index) => (
+            <div key={index} className="rounded-lg">
+              <img
+                src={card.card_images[0].image_url}
+                alt={card.name}
+                className="object-cover rounded-md"
+              />
             </div>
- 
-            <button
-              className="bg-blue-500 hover:bg-blue-500  group relative block mx-auto my-3 text-lg custom-card text-white"
-              onClick={handleAddSetConfirm}
-            >
-              Confirmer
-              <div className="absolute inset-0 custom-card h-full w-full scale-0  transition-all duration-300 group-hover:scale-100 group-hover:bg-white/30"></div>
-            </button>
+          ))
+        ) : (
+          // Non-admin view - maps over `Object.entries(cards)` to handle `cardSet`
+          Object.entries(cards).map(([key, cardSet]) => (
+            Array.isArray(cardSet) &&
+            cardSet.map((card, index) => {
+              const price = card[9] && card[9]._isBigNumber ? BigNumber.from(card[9]._hex).toString() : "N/A";
+              
+              return (
+                <div key={index} className="rounded-lg">
+                  <div className="card-info ">
+                    <div className="flex relative justify-center font-bold ">
+                      <p className="text-yellow-500 bg-purple-950 w-full text-center rounded-sm">Prix: {price}</p>
+                    </div>
+                    <img
+                      src={card[4]}
+                      alt={card.name}
+                      className="object-cover rounded-md"
+                    />
+                    <div className="flex relative justify-center">
+                    {card.quantity > 0 ?(
+                    <button
+                    className="bg-yellow-500 hover:bg-blue-500 group relative block mx-auto my-3 text-lg custom-card2 text-white"
+                    onClick={() => handleAcheter(index,card.tokenId.toNumber(),card.price.toNumber())}
+                    >
+                    Acheter
+                  </button>):(
+                    <div className="bg-red-700 group relative block mx-auto my-3 text-lg custom-card2 text-white"> Vendu </div>
+                  )}
+                  </div>
+                  </div>
+                </div>
+              );
+            })
+          ))
+        )}
           </div>
+          {isAdmin &&(
+          <button
+            className="bg-blue-500 hover:bg-blue-500 group relative block mx-auto my-3 text-lg custom-card text-white"
+            onClick={handleAddSetConfirm}
+          >
+            Confirmer
+            <div className="absolute inset-0 custom-card h-full w-full scale-0 transition-all duration-300 group-hover:scale-100 group-hover:bg-white/30"></div>
+          </button>
+          )}
         </div>
-      )}
+      </div>
+    )}
+
 
       <style>{`
         @font-face {
@@ -330,6 +397,19 @@ export const Collection = () => {
           font-weight: bold;
           padding: 10px 20px;
           border: 1px solid white;
+          clip-path: polygon(30% 0%, 94% 0, 100% 7%, 100% 70%, 100% 100%, 5% 100%, 0 93%, 0 0);
+          transition: transform 0.3s, box-shadow 0.3s;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+          font-family: 'YuGiOhFont', sans-serif;
+        }
+
+        .custom-card2 {
+          color: white;
+          font-weight: bold;
+          padding: 5px 10px;
+          border: 2px solid white;
           clip-path: polygon(30% 0%, 94% 0, 100% 7%, 100% 70%, 100% 100%, 5% 100%, 0 93%, 0 0);
           transition: transform 0.3s, box-shadow 0.3s;
           text-overflow: ellipsis;

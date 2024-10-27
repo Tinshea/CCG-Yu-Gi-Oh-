@@ -35,11 +35,11 @@ export const CollectionContext = React.createContext({
   getMarketCards: async () => null,
   buyCardFromMarket: async (cardId: number, price: number) => false,
   removeCardFromMarket: async (cardId: number) => false,
-  openCollectionBooster: async (
+  openCollectionBooster: (
     collectionId: number,
     price: number,
     numcards: number
-  ) => false,
+  ): Promise<any> => Promise.resolve([]),
 })
 
 interface EthereumWindow extends Window {
